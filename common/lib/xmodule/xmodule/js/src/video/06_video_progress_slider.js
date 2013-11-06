@@ -12,14 +12,18 @@ define(
 'video/06_video_progress_slider.js',
 [],
 function () {
-
     // VideoProgressSlider() function - what this module "exports".
     return function (state) {
+        var dfd = $.Deferred();
+
         state.videoProgressSlider = {};
 
         _makeFunctionsPublic(state);
         _renderElements(state);
         // No callbacks to DOM events (click, mousemove, etc.).
+
+        dfd.resolve();
+        return dfd.promise();
     };
 
     // ***************************************************************

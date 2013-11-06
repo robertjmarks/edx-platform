@@ -15,6 +15,14 @@ div.video {
     border: 0;
   }
 
+  &.is-initialized {
+    article.video-wrapper {
+      .spinner {
+        display: none;
+      }
+    }
+  }
+
   div.tc-wrapper {
     position: relative;
     @include clearfix;
@@ -58,20 +66,37 @@ div.video {
     float: left;
     margin-right: flex-gutter(9);
     width: flex-grid(6, 9);
-
     background-color: black;
-
     position: relative;
 
-    div.video-player-pre {
-        height: 50px;
-        background-color: black;
+    div.video-player-pre, div.video-player-post {
+       height: 50px;
+       background-color: black;
     }
 
-    div.video-player-post {
-        height: 50px;
-        background-color: black;
+    .spinner {
+      position: absolute;
+      z-index: 1;
+      background: rgba(0, 0, 0, 0.7);
+      top: 50%;
+      left: 50%;
+      padding: 30px;
+      @include transform(translate(-50%, -50%));
+      border-radius: 25%;
+
+      &:after{
+        content: '';
+        display: block;
+        width: 30px;
+        height: 30px;
+        border: 7px solid white;
+        border-top-color: transparent;
+        border-radius: 100%;
+        position: relative;
+        @include animation(rotateCW 3s infinite linear);
+      }
     }
+
 
     section.video-player {
       overflow: hidden;
@@ -85,7 +110,6 @@ div.video {
 
       object, iframe, video {
         border: none;
-        height: 100%;
         width: 100%;
       }
 
@@ -109,7 +133,7 @@ div.video {
 
       &:hover {
         ul, div {
-          opacity: 1.0;
+          opacity: 1;
         }
       }
 
@@ -141,19 +165,6 @@ div.video {
 
         div.ui-corner-all.slider-range {
           background-color: #1e91d3;
-
-          /* We add opacity so that we can discern the amount of video that has
-           * been played. The progress will advance as a gray-shaded area. When
-           * it will overlap with the range, you will see a different shade of
-           * the range for part that has been played, and for part that is
-           * still to be played.
-           *
-           * For CSS opacity, different browsers are handled differently.
-           */
-          -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";
-          filter: alpha(opacity=30);
-          -moz-opacity: 0.3;
-          -khtml-opacity: 0.3;
           opacity: 0.3;
         }
 
@@ -274,7 +285,7 @@ div.video {
 
             ol.video_speeds {
               display: block;
-              opacity: 1.0;
+              opacity: 1;
               padding: 0;
               margin: 0;
               list-style: none;
@@ -312,12 +323,12 @@ div.video {
 
             &:hover {
               outline: 0;
-              opacity: 1.0;
+              opacity: 1;
               background-color: #444;
             }
 
             &:active {
-              opacity: 1.0;
+              opacity: 1;
               background-color: #444;
             }
 
@@ -355,7 +366,7 @@ div.video {
             border: 1px solid #000;
             bottom: 46px;
             display: none;
-            opacity: 0.0;
+            opacity: 0;
             position: absolute;
             width: 131px;
 
@@ -404,7 +415,7 @@ div.video {
           &.open {
             .volume-slider-container {
               display: block;
-              opacity: 1.0;
+              opacity: 1;
             }
           }
 
@@ -448,7 +459,7 @@ div.video {
             border: 1px solid #000;
             bottom: 46px;
             display: none;
-            opacity: 0.0;
+            opacity: 0;
             position: absolute;
             width: 45px;
             height: 125px;
@@ -543,7 +554,7 @@ div.video {
           font-weight: 800;
           line-height: 46px; //height of play pause buttons
           margin-left: 0;
-          opacity: 1.0;
+          opacity: 1;
           padding: 0 lh(.5);
           position: relative;
           text-indent: -9999px;
@@ -569,7 +580,7 @@ div.video {
 
     &:hover section.video-controls {
       ul, div {
-        opacity: 1.0;
+        opacity: 1;
       }
 
       div.slider {
@@ -754,3 +765,5 @@ div.video {
     }
   }
 }
+
+
