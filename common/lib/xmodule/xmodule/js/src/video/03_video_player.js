@@ -195,8 +195,7 @@ function (HTML5Video, Resizer) {
     // It is called at a regular interval when the video is playing (see
     // below).
     function update() {
-        this.videoPlayer.currentTime = this.videoPlayer.player
-            .getCurrentTime();
+        this.videoPlayer.currentTime = this.videoPlayer.player.getCurrentTime();
 
         if (isFinite(this.videoPlayer.currentTime)) {
             this.videoPlayer.updatePlayTime(this.videoPlayer.currentTime);

@@ -34,7 +34,7 @@ Feature: LMS.Video component
     And the course has a Video component in Youtube mode
     Then when I view the video it has rendered in Youtube mode
 
-  # 6
+# 6
   Scenario: Video component is rendered in the LMS in Youtube mode with HTML5 sources that doesn't supported by browser
     Given youtube server is up and response time is 2 seconds
     And the course has a Video component in Youtube_HTML5_Unsupported_Video mode
@@ -45,3 +45,12 @@ Feature: LMS.Video component
     Given the course has a Video component in HTML5_Unsupported_Video mode
     Then error message is shown
     And error message has correct text
+
+  # 8
+  Scenario: Video component is rendered in the LMS in HTML5 mode with HTML5 sources that doesn't supported by browser
+    Given the course has a Video component in Youtube mode with following metadata:
+    | start_time | end_time |
+    | 00:00:00   | 00:00:04 |
+    And I change video speed to "2.0"
+    And I click button "play"
+    And I see that video plays "2" seconds

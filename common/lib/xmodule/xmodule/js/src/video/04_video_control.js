@@ -153,12 +153,18 @@ function () {
     }
 
     function play() {
-        this.videoControl.playPauseEl.removeClass('play').addClass('pause').attr('title', gettext('Pause'));
+        this.videoControl.playPauseEl
+            .removeClass('play')
+            .addClass('pause')
+            .attr('title', gettext('Pause'));
         this.videoControl.isPlaying = true;
     }
 
     function pause() {
-        this.videoControl.playPauseEl.removeClass('pause').addClass('play').attr('title', gettext('Play'));
+        this.videoControl.playPauseEl
+            .removeClass('pause')
+            .addClass('play')
+            .attr('title', gettext('Play'));
         this.videoControl.isPlaying = false;
     }
 

@@ -1,6 +1,7 @@
 #pylint: disable=C0111
 
-from lettuce import world, step
+import time
+from lettuce import world, after, step
 from lettuce.django import django_url
 from common import i_am_registered_for_the_course, section_location
 from django.utils.translation import ugettext as _
@@ -12,9 +13,21 @@ HTML5_SOURCES = [
     'https://s3.amazonaws.com/edx-course-videos/edx-intro/edX-FA12-cware-1_100.webm',
     'https://s3.amazonaws.com/edx-course-videos/edx-intro/edX-FA12-cware-1_100.ogv'
 ]
+
 HTML5_SOURCES_INCORRECT = [
     'https://s3.amazonaws.com/edx-course-videos/edx-intro/edX-FA12-cware-1_100.mp99'
 ]
+
+BUTTONS = {
+    'play': '.vcr .play',
+    'pause': '.vcr .pause',
+}
+
+
+@after.each_scenario
+def teardown_server_time_to_response(scenario):
+    world.youtube_server.time_to_response = 0.1  # seconds
+
 
 @step('when I view the (.*) it does not have autoplay enabled$')
 def does_not_autoplay(_step, video_type):
@@ -23,11 +36,19 @@ def does_not_autoplay(_step, video_type):
 
 @step('the course has a Video component in (.*) mode$')
 def view_video(_step, player_mode):
+    _step.given('the course has a Video component in {mode} mode with following metadata:'.format(
+        mode=player_mode
+    ))
+
+@step('the course has a Video component in (.*) mode with following metadata:$')
+def view_video_with_metadata(_step, player_mode):
     coursenum = 'test_course'
     i_am_registered_for_the_course(step, coursenum)
 
+    metadata = _step.hashes[0] if _step.hashes else {}
+
     # Make sure we have a video
-    add_video_to_course(coursenum, player_mode.lower())
+    add_video_to_course(coursenum, player_mode.lower(), metadata)
     chapter_name = world.scenario_dict['SECTION'].display_name.replace(" ", "_")
     section_name = chapter_name
     url = django_url('/courses/%s/%s/%s/courseware/%s/%s' %
@@ -36,14 +57,19 @@ def view_video(_step, player_mode):
     world.browser.visit(url)
 
 
-def add_video_to_course(course, player_mode):
+def add_video_to_course(course, player_mode, metadata):
     category = 'video'
 
     kwargs = {
         'parent_location': section_location(course),
         'category': category,
-        'display_name': 'Video'
+        'display_name': 'Video',
     }
+
+    if metadata:
+        kwargs.update({
+            'metadata': metadata
+        })
 
     if player_mode == 'html5':
         kwargs.update({
@@ -115,4 +141,50 @@ def error_message_has_correct_text(_step):
     text = _('ERROR: No playable video sources found!')
     assert world.css_has_text(selector, text)
 
+
+@step('I change video speed to "([^"]*)"$')
+def change_speed(_step, speed):
+    SPEED_MENU = '.speeds'
+    SPEED_MENU_LINK = '.speed_link'
+    LINK = 'li[data-speed="{speed}"] a'.format(speed=speed)
+
+    world.wait_for_present(SPEED_MENU)
+    world.browser.driver.execute_script("$('{menu}').addClass('open')".format(menu=SPEED_MENU))
+
+    world.wait_for_visible(SPEED_MENU_LINK)
+    world.css_click(LINK)
+
+
+@step('I click button "([^"]*)"$')
+def click_button(_step, button):
+    btn = BUTTONS[button]
+    world.wait_for_present(btn)
+    world.css_click(btn)
+
+
+@step('I see that video plays "([^"]*)" seconds$')
+def check_playing_time(_step, seconds):
+    btn_pause = BUTTONS['pause']
+    btn_play = BUTTONS['play']
+
+    #disable css animations for buttons `play` and `pause`
+    world.browser.driver.execute_script("$('{selector}').css('transition', 'none');".format(
+        selector= '%s,%s' % (btn_pause, btn_play)
+    ))
+
+    # For now, the one way to check the correctness of speed is in measuring
+    # time of playing.
+    # Video with duration 4 seconds, should be ended for 2 seconds on speed 2x.
+    # To do that we measure time between 2 states of play button:
+    # 1) play -> pause : video starts to play;
+    # 2) pause -> play : video stops to play.
+    world.wait_for_visible(btn_pause)
+    start_time = time.time()
+
+    world.wait_for_visible(btn_play)
+    playing_time = time.time() - start_time
+
+    error = 0.5 # sec
+
+    assert abs(playing_time - int(seconds)) < error
 
