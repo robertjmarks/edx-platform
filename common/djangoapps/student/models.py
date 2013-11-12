@@ -62,8 +62,7 @@ def unique_id_for_user(user):
     e.g. personalized survey links.
     """
     def _unique_id_for_user(user):
-        # include the secret key as a salt, and to make the ids unique across
-        # different LMS installs.
+        # include the secret key as a salt, and to make the ids unique across different LMS installs.
         h = hashlib.md5()
         h.update(settings.SECRET_KEY)
         h.update(str(user.id))
@@ -77,10 +76,11 @@ def unique_id_for_user(user):
 
 def user_by_anonymous_id(id):
     """
-    Return user by anonymous_student_id using AnonymousUsers lookup table.
+    Return user by anonymous_user_id using AnonymousUsers lookup table.
 
-    Returns None if there is no user for given id. Does not raising django.ObjectDoesNotExist
-    exception, because this function will be used inside xmodule w/o django access.
+    Do not raise `django.ObjectDoesNotExist` exception,
+    if there is no user for anonymous_student_id,
+    because this function will be used inside xmodule w/o django access.
     """
     try:
         obj = AnonymousUsers.objects.get(anonymous_user_id=id)

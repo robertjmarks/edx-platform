@@ -405,6 +405,7 @@ class XModule(XModuleMixin, HTMLSnippet, XBlock):  # pylint: disable=abstract-me
         """
         XBlock handler that wraps `handle_ajax`
         """
+        import ipdb; ipdb.set_trace()
         response_data = self.handle_ajax(suffix, request.POST)
         return Response(response_data, content_type='application/json')
 
