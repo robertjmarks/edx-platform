@@ -130,16 +130,27 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
             # the correct fields, it won't find them,
             # and will therefore send an error response
             return {}
+        try:
+            cookie = self.headers.getheader('cookie')
+            self.server.cookie = {k.strip():v[0]  for k,v in urlparse.parse_qs(cookie).items()}
+        except:
+            self.server.cookie = {}
         return post_dict
 
     def _send_graded_result(self, callback_url):
         payload = {'score': 0.95}
 
         # temporarily changed to get for easy view in browser
-        url = "http://127.0.0.1:8001" + callback_url
-
-        response=requests.post(url, data=payload)
-        import ipdb; ipdb.set_trace()
+        url = "http://localhost:8001" + callback_url
+        cookies = self.server.cookie
+        headers = {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest', 'X-CSRFToken':'update_me'}
+        headers['X-CSRFToken'] = cookies.get('csrftoken')
+        response=requests.post(
+            url,
+            data=payload,
+            cookies=cookies,
+            headers=headers
+        )
         #assert response.status_code == 200
 
     def _send_response(self, message, url=None):
