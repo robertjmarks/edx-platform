@@ -388,18 +388,74 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         """
         This is called by courseware.module_render, to handle an AJAX call.
 
+        Used only for grading.
+
         Returns json in following format:
-        {'status_code': HTTP status code, 'content': use it only for returning
-        data for action `read`}
+        {'status_code': HTTP status code, 'content': proper XML defined in LTI v.1.1}
+
+        Uses http://oauth.googlecode.com/svn/spec/ext/body_hash/1.0/oauth-bodyhash.html::
+
+            This specification extends the OAuth signature to include integrity checks on HTTP request bodies
+            with content types other than application/x-www-form-urlencoded.
         """
-        # It can be case, that user is logged out, but TP have not yet submitted grade for him.
-        # for this case, TP sends back anonymous_id and we obtain user by anonymous user id.
-        # TODO: test and verify it!
+
+        # verify oauth signing
+
+        # TODO fix xmlns
+        response_xml_template = textwrap.dedent("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <imsx_POXEnvelopeResponse xmlns="http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
+                <imsx_POXHeader>
+                    <imsx_POXResponseHeaderInfo>
+                        <imsx_version>V1.0</imsx_version>
+                        <imsx_messageIdentifier>{imsx_messageIdentifier}</imsx_messageIdentifier>
+                        <imsx_statusInfo>
+                            <imsx_codeMajor>{imsx_codeMajor}</imsx_codeMajor>
+                            <imsx_severity>status</imsx_severity>
+                            <imsx_description>{imsx_description}</imsx_description>
+                            <imsx_messageRefIdentifier>
+                            </imsx_messageRefIdentifier>
+                        </imsx_statusInfo>
+                    </imsx_POXResponseHeaderInfo>
+                </imsx_POXHeader>
+                <imsx_POXBody>{response}</imsx_POXBody>
+            </imsx_POXEnvelopeResponse>
+        """)
+
+        # what will come:
+        data_example = textwrap.dedent("""
+            <?xml version = "1.0" encoding = "UTF-8"?>
+                <imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
+                  <imsx_POXHeader>
+                    <imsx_POXRequestHeaderInfo>
+                      <imsx_version>V1.0</imsx_version>
+                      <imsx_messageIdentifier>528243ba5241b</imsx_messageIdentifier>
+                    </imsx_POXRequestHeaderInfo>
+                  </imsx_POXHeader>
+                  <imsx_POXBody>
+                    <replaceResultRequest>
+                      <resultRecord>
+                        <sourcedGUID>
+                          <sourcedId>feb-123-456-2929::28883</sourcedId>
+                        </sourcedGUID>
+                        <result>
+                          <resultScore>
+                            <language>en-us</language>
+                            <textString>0.4</textString>
+                          </resultScore>
+                        </result>
+                      </resultRecord>
+                    </replaceResultRequest>
+                  </imsx_POXBody>
+                </imsx_POXEnvelopeRequest>
+        """)
+        request = etree.fromstring(data_example.strip())
+
+
+
         anonymous_id = data.get('anonymous_id', 'test_anonymous_id')
         action = dispatch.lower()
-        # test $.post('/preview/modx/0/i4x://mitx/cs101/lti/80587c94f3cc455f8a63f660b7ff9315/set', {'score': 1})
-        # $.post('http://localhost:8000/courses/blades/1/2013_Spring/courseware/caac519cf1ad4fba96a76a6f816faae9/f773addfbafa4059a0bcd5c33ce01901/set', {'score': 1})
-        if action == 'set':
+        if action == 'set' and :
             if 'score' not in data.keys():
                 return json.dumps({'status_code': 400})
 
@@ -412,32 +468,22 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
                 custom_user=self.system.get_real_user(anonymous_id)
             )
 
-            return json.dumps({'status_code': 200})
+            values = {
+                'imsx_codeMajor': 'success',
+                'imsx_description': 'Score for {sourced_id} is now {score}'.format(sourced_id=anonymous_id, score=data['score']),
+                'imsx_messageIdentifier': 'TODO',
+                'response': '<replaceResultResponse/>'
+            }
 
         else:  # return "unsupported" response
-            response = {
-                'status_code': 200,
-                'content': textwrap.dedent("""
-                    <?xml version="1.0" encoding="UTF-8"?>
-                        <imsx_POXEnvelopeResponse xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
-                            <imsx_POXHeader>
-                                <imsx_POXResponseHeaderInfo>
-                                <imsx_version>V1.0</imsx_version>
-                                <imsx_messageIdentifier>4560</imsx_messageIdentifier>
-                                <imsx_statusInfo>
-                                    <imsx_codeMajor>unsupported</imsx_codeMajor>
-                                    <imsx_severity>status</imsx_severity>
-                                    <imsx_description>readPerson is not supported</imsx_description>
-                                    <imsx_messageRefIdentifier>999999123</imsx_messageRefIdentifier>
-                                    <imsx_operationRefIdentifier>readPerson</imsx_operationRefIdentifier>
-                                </imsx_statusInfo>
-                                </imsx_POXResponseHeaderInfo>
-                            </imsx_POXHeader>
-                        <imsx_POXBody/>
-                        </imsx_POXEnvelopeResponse>
-                """)
+            values = {
+                'imsx_codeMajor': 'unsupported',
+                'imsx_description': '{} is not supported'.format(action),
+                'imsx_messageIdentifier': 'TODO',
+                'response' : ''
             }
-            return json.dumps(response)
+
+        return response_xml_template.format(**values), "application/xml"
 
 
 class LTIModuleDescriptor(LTIFields, MetadataOnlyEditingDescriptor, EmptyDataRawDescriptor):

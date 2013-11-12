@@ -406,7 +406,13 @@ class XModule(XModuleMixin, HTMLSnippet, XBlock):  # pylint: disable=abstract-me
         XBlock handler that wraps `handle_ajax`
         """
         response_data = self.handle_ajax(suffix, request.POST)
-        return Response(response_data, content_type='application/json')
+
+        if isinstance(response_data, tuple):
+            response_data, content_type = response_data
+        else:
+            content_type = 'application/json'
+
+        return Response(response_data, content_type=content_type)
 
     def get_children(self):
         """
