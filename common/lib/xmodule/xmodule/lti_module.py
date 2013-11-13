@@ -13,9 +13,8 @@ from uuid import uuid4
 import logging
 import oauthlib.oauth1
 import urllib
-import json
 import textwrap
-import xml.etree.ElementTree as ET
+from lxml import etree
 
 from xmodule.editing_module import MetadataOnlyEditingDescriptor
 from xmodule.raw_module import EmptyDataRawDescriptor
@@ -404,10 +403,10 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
 
         # verify oauth signing
 
-        # TODO fix xmlns
+        # Beware: xmlns is broken link, as it is from LTI spec page, where it is broken.
         response_xml_template = textwrap.dedent("""
             <?xml version="1.0" encoding="UTF-8"?>
-            <imsx_POXEnvelopeResponse xmlns="http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
+            <imsx_POXEnvelopeResponse xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
                 <imsx_POXHeader>
                     <imsx_POXResponseHeaderInfo>
                         <imsx_version>V1.0</imsx_version>
@@ -436,7 +435,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         """
         data_example = textwrap.dedent(\"""
             <?xml version = "1.0" encoding = "UTF-8"?>
-                <imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
+                <imsx_POXEnvelopeRequest xmlns = "some_link (may be not required)">
                   <imsx_POXHeader>
                     <imsx_POXRequestHeaderInfo>
                       <imsx_version>V1.0</imsx_version>
@@ -462,10 +461,10 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         \""")
         """
         try:  # get data from request
-            root = ET.fromstring(data.strip())
-            imsx_messageIdentifier = root.find('imsx_POXHeader/imsx_POXRequestHeaderInfo/imsx_messageIdentifier').text
-            sourcedId = root.find('imsx_POXBody/replaceResultRequest/resultRecord/sourcedGUID/sourcedId').text
-            score = root.find('imsx_POXBody/replaceResultRequest/resultRecord/result/resultScore/textString').text
+            root = etree.fromstring(data.strip())
+            imsx_messageIdentifier = root.xpath("//*[local-name()='imsx_messageIdentifier']")[0].text
+            sourcedId = root.xpath("//*[local-name()='sourcedId']")[0].text
+            score = root.xpath("//*[local-name()='textString']")[0].text
         except:
             return response_xml_template.format(**unsupported_values), "application/xml"
 
