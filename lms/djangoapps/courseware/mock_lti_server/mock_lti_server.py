@@ -32,7 +32,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
         '''
         Handle a POST request from the client and sends response back.
         '''
-        self.post_dict = self._post_dict()
+        #self.post_dict = self._post_dict()
 
         self.send_response(200, 'OK')
         self.send_header('Content-type', 'html')
@@ -137,18 +137,48 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
             self.server.cookie = {k.strip():v[0]  for k,v in urlparse.parse_qs(cookie).items()}
         except:
             self.server.cookie = {}
+        referer = urlparse.urlparse(self.headers.getheader('referer'))
+        self.server.referer_host = "{}://{}".format(referer.scheme, referer.netloc)
         return post_dict
 
     def _send_graded_result(self):
-        payload = {
-            'score': 0.3,
-            'anonymous_id': self.server.grade_data['user_id']
+
+        values = {
+            'textString': 0.1,
+            'sourcedId': self.server.grade_data['user_id']
         }
 
+        payload = textwrap.dedent("""
+            <?xml version = "1.0" encoding = "UTF-8"?>
+                <imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
+                  <imsx_POXHeader>
+                    <imsx_POXRequestHeaderInfo>
+                      <imsx_version>V1.0</imsx_version>
+                      <imsx_messageIdentifier>528243ba5241b</imsx_messageIdentifier> /
+                    </imsx_POXRequestHeaderInfo>
+                  </imsx_POXHeader>
+                  <imsx_POXBody>
+                    <replaceResultRequest>
+                      <resultRecord>
+                        <sourcedGUID>
+                          <sourcedId>feb-123-456-2929::28883</sourcedId>
+                        </sourcedGUID>
+                        <result>
+                          <resultScore>
+                            <language>en-us</language>
+                            <textString>0.4</textString>
+                          </resultScore>
+                        </result>
+                      </resultRecord>
+                    </replaceResultRequest>
+                  </imsx_POXBody>
+                </imsx_POXEnvelopeRequest>
+        """)
+        data =  payload.format(**values)
         # temporarily changed to get for easy view in browser
-        url = "http://localhost:8000" + self.server.grade_data['callback_url']
+        url = self.server.referer_host + self.server.grade_data['callback_url']
         cookies = self.server.cookie
-        headers = {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest', 'X-CSRFToken':'update_me'}
+        headers = {'Content-Type':'application/xml','X-Requested-With':'XMLHttpRequest', 'X-CSRFToken':'update_me'}
         headers['X-CSRFToken'] = cookies.get('csrftoken')
         response=requests.post(
             url,
