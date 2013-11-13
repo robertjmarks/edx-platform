@@ -1,4 +1,5 @@
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+from uuid import uuid4
 import urlparse
 from oauthlib.oauth1.rfc5849 import signature
 import mock
@@ -145,7 +146,8 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
 
         values = {
             'textString': 0.1,
-            'sourcedId': self.server.grade_data['user_id']
+            'sourcedId': self.server.grade_data['user_id'],
+            'imsx_messageIdentifier': uuid4().hex,
         }
 
         payload = textwrap.dedent("""
