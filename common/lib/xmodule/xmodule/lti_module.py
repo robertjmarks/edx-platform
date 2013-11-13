@@ -15,6 +15,7 @@ import oauthlib.oauth1
 import urllib
 import json
 import textwrap
+import xml.etree.ElementTree as ET
 
 from xmodule.editing_module import MetadataOnlyEditingDescriptor
 from xmodule.raw_module import EmptyDataRawDescriptor
@@ -265,38 +266,40 @@ class LTIModule(LTIFields, XModule):
         return self.lti_id
 
     def get_resource_link_id(self):
-        #  This is an opaque unique identifier that the TC guarantees will be unique
-        #   within the TC for every placement of the link.
-        #  If the tool / activity is placed multiple times in the same context,
-        #  each of those placements will be distinct.
-        # This value will also change if the item is exported from one system or
-        # context and imported into another system or context.
-        # This parameter is required.
-
-        # This is unique id of edx platform.
+        """
+        This is an opaque unique identifier that the TC guarantees will be unique
+        within the TC for every placement of the link.
+        If the tool / activity is placed multiple times in the same context,
+        each of those placements will be distinct.
+        This value will also change if the item is exported from one system or
+        context and imported into another system or context.
+        This parameter is required.
+        """
+        # This is unique id of edx platform instance. Ned, it is true?
         return unicode(self.id) if self.is_graded else ''
 
     def get_lis_result_sourcedid(self):
-        if self.is_graded:
-            # This field contains an identifier that indicates the LIS Result Identifier (if any)
-            # associated with this launch.  This field identifies a unique row and column within the
-            # TC gradebook.  This field is unique for every combination of context_id / resource_link_id / user_id.
-            # This value may change for a particular resource_link_id / user_id  from one launch to the next.
-            # The TP should only retain the most recent value for this field for a particular resource_link_id / user_id.
-            # This field is optional.
-
-            # context_id is lti_id
+        """
+        This field contains an identifier that indicates the LIS Result Identifier (if any)
+        associated with this launch.  This field identifies a unique row and column within the
+        TC gradebook.  This field is unique for every combination of context_id / resource_link_id / user_id.
+        This value may change for a particular resource_link_id / user_id  from one launch to the next.
+        The TP should only retain the most recent value for this field for a particular resource_link_id / user_id.
+        This field is generally optional, but is required for grading.
+        """
+        if self.is_graded:  # lti_id should be context_id by meaning.
             return '{}::{}::{}'.format(self.lti_id, self.get_resource_link_id(), self.get_user_id())
         else:
             return ''
 
-    def get_lis_person_sourcedid(self):
-        # This field contains the LIS identifier for the user account that is performing this launch.
-        # The example syntax of "school:user" is not the required format - lis_person_sourcedid
-        # is simply a unique identifier (i.e., a normalized string).
-        # This field is optional and its content and meaning are defined by LIS.
-        school = 'EdX'
-        return '{}:{}:{}'.format(school, self.get_user_id(), uuid4().hex) if self.is_graded else ''
+    # Optional, do not use it for now.
+    # def get_lis_person_sourcedid(self):
+    #     # This field contains the LIS identifier for the user account that is performing this launch.
+    #     # The example syntax of "school:user" is not the required format - lis_person_sourcedid
+    #     # is simply a unique identifier (i.e., a normalized string).
+    #     # This field is optional and its content and meaning are defined by LIS.
+    #     school = 'EdX'
+    #     return '{}:{}:{}'.format(school, self.get_user_id(), uuid4().hex) if self.is_graded else ''
 
     def oauth_params(self, custom_parameters, client_key, client_secret):
         """
@@ -323,14 +326,11 @@ class LTIModule(LTIFields, XModule):
             u'lti_version': 'LTI-1p0',
             u'role': u'student',
 
-            # for grades, TODO: generate properly:
-            # required
+            # Parameters required for grading:
             u'resource_link_id': self.get_resource_link_id(),
-            u'lis_outcome_service_url': '{}/set'.format(self.get_base_path() if self.is_graded else ''),
-
-            # optional fields
+            u'lis_outcome_service_url': '{}/replaceResult'.format(self.get_base_path() if self.is_graded else ''),
             u'lis_result_sourcedid': self.get_lis_result_sourcedid(),
-            u'lis_person_sourcedid': self.get_lis_person_sourcedid(),
+            # u'lis_person_sourcedid': self.get_lis_person_sourcedid(),  # optional, do not use for now.
 
         }
 
@@ -376,6 +376,9 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         return params
 
     def get_score(self):
+        """
+        TODO read score
+        """
         return {
             'score': 0.5,
             'total': self.get_maxscore()
@@ -422,8 +425,16 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
             </imsx_POXEnvelopeResponse>
         """)
 
-        # what will come:
-        data_example = textwrap.dedent("""
+        unsupported_values = {
+            'imsx_codeMajor': 'unsupported',
+            'imsx_description': 'Only replaceResult is supported',
+            'imsx_messageIdentifier': 'unknown',
+            'response': ''
+        }
+
+        # what should come from LTI provider:
+        """
+        data_example = textwrap.dedent(\"""
             <?xml version = "1.0" encoding = "UTF-8"?>
                 <imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
                   <imsx_POXHeader>
@@ -448,42 +459,39 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
                     </replaceResultRequest>
                   </imsx_POXBody>
                 </imsx_POXEnvelopeRequest>
-        """)
-        request = etree.fromstring(data_example.strip())
+        \""")
+        """
+        try:  # get data from request
+            root = ET.fromstring(data.strip())
+            imsx_messageIdentifier = root.find('imsx_POXHeader/imsx_POXRequestHeaderInfo/imsx_messageIdentifier').text
+            sourcedId = root.find('imsx_POXBody/replaceResultRequest/resultRecord/sourcedGUID/sourcedId').text
+            score = root.find('imsx_POXBody/replaceResultRequest/resultRecord/result/resultScore/textString').text
+        except:
+            return response_xml_template.format(**unsupported_values), "application/xml"
 
-
-
-        anonymous_id = data.get('anonymous_id', 'test_anonymous_id')
         action = dispatch.lower()
-        if action == 'set' and :
-            if 'score' not in data.keys():
-                return json.dumps({'status_code': 400})
+        if action == 'replaceResult':
 
             self.system.publish(
                 event={
                     'event_name': 'grade',
-                    'value': data['score'],
+                    'value': score,
                     'max_value': self.get_maxscore(),
                 },
-                custom_user=self.system.get_real_user(anonymous_id)
+                custom_user=self.system.get_real_user(sourcedId.split('::')[-1])
             )
 
             values = {
                 'imsx_codeMajor': 'success',
-                'imsx_description': 'Score for {sourced_id} is now {score}'.format(sourced_id=anonymous_id, score=data['score']),
-                'imsx_messageIdentifier': 'TODO',
+                'imsx_description': 'Score for {sourced_id} is now {score}'.format(sourced_id=sourcedId, score=score),
+                'imsx_messageIdentifier': imsx_messageIdentifier,
                 'response': '<replaceResultResponse/>'
             }
+            return response_xml_template.format(**values), "application/xml"
 
-        else:  # return "unsupported" response
-            values = {
-                'imsx_codeMajor': 'unsupported',
-                'imsx_description': '{} is not supported'.format(action),
-                'imsx_messageIdentifier': 'TODO',
-                'response' : ''
-            }
-
-        return response_xml_template.format(**values), "application/xml"
+        # return "unsupported" response
+        unsupported_values['imsx_messageIdentifier'] = imsx_messageIdentifier
+        return response_xml_template.format(**unsupported_values), "application/xml"
 
 
 class LTIModuleDescriptor(LTIFields, MetadataOnlyEditingDescriptor, EmptyDataRawDescriptor):
