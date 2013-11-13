@@ -5,6 +5,8 @@ from oauthlib.oauth1.rfc5849 import signature
 import mock
 import sys
 import requests
+import textwrap
+
 from logging import getLogger
 logger = getLogger(__name__)
 
@@ -78,7 +80,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
                 'lis_outcome_service_url',
                 'lis_result_sourcedid',
                 'launch_presentation_return_url',
-                'lis_person_sourcedid',
+                # 'lis_person_sourcedid',  optional, not used now.
                 'resource_link_id',
             ]
             if sorted(correct_keys) != sorted(self.post_dict.keys()):
