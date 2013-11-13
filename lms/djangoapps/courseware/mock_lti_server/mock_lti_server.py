@@ -179,19 +179,19 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
                   </imsx_POXBody>
                 </imsx_POXEnvelopeRequest>
         """)
-        data =  payload.format(**values)
+        data = payload.format(**values)
         # temporarily changed to get for easy view in browser
         url = self.server.referer_host + self.server.grade_data['callback_url']
         cookies = self.server.cookie
-        headers = {'Content-Type':'application/xml','X-Requested-With':'XMLHttpRequest', 'X-CSRFToken':'update_me'}
+        headers = {'Content-Type': 'application/xml', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': 'update_me'}
         headers['X-CSRFToken'] = cookies.get('csrftoken')
-        response=requests.post(
+        response = requests.post(
             url,
             data=data,
-            cookies={k: v for k,v in cookies.items() if k in ['csrftoken', 'sessionid']},
+            cookies={k: v for k, v in cookies.items() if k in ['csrftoken', 'sessionid']},
             headers=headers
         )
-        #assert response.status_code == 200
+        assert response.status_code == 200
 
     def _send_response(self, message):
         '''

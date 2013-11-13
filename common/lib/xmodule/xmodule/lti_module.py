@@ -472,7 +472,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
             return response_xml_template.format(**unsupported_values), "application/xml"
 
         action = dispatch.lower()
-        if action == 'replaceResult':
+        if action == 'replaceresult':
 
             self.system.publish(
                 event={
