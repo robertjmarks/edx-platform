@@ -1,5 +1,6 @@
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from uuid import uuid4
+import textwrap
 import urlparse
 from oauthlib.oauth1.rfc5849 import signature
 import mock
@@ -154,23 +155,23 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
 
         payload = textwrap.dedent("""
             <?xml version = "1.0" encoding = "UTF-8"?>
-                <imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
+                <imsx_POXEnvelopeRequest>
                   <imsx_POXHeader>
                     <imsx_POXRequestHeaderInfo>
                       <imsx_version>V1.0</imsx_version>
-                      <imsx_messageIdentifier>528243ba5241b</imsx_messageIdentifier> /
+                      <imsx_messageIdentifier>{imsx_messageIdentifier}</imsx_messageIdentifier> /
                     </imsx_POXRequestHeaderInfo>
                   </imsx_POXHeader>
                   <imsx_POXBody>
                     <replaceResultRequest>
                       <resultRecord>
                         <sourcedGUID>
-                          <sourcedId>feb-123-456-2929::28883</sourcedId>
+                          <sourcedId>{sourcedId}</sourcedId>
                         </sourcedGUID>
                         <result>
                           <resultScore>
                             <language>en-us</language>
-                            <textString>0.4</textString>
+                            <textString>{textString}</textString>
                           </resultScore>
                         </result>
                       </resultRecord>
