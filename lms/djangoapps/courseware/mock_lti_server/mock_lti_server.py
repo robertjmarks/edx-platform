@@ -187,7 +187,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
         headers['X-CSRFToken'] = cookies.get('csrftoken')
         response=requests.post(
             url,
-            data=payload.strip(),
+            data=data,
             cookies={k: v for k,v in cookies.items() if k in ['csrftoken', 'sessionid']},
             headers=headers
         )
