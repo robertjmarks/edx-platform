@@ -460,8 +460,11 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
                 </imsx_POXEnvelopeRequest>
         \""")
         """
+        data = data.keys()[0] + '=' + data.values()[0]
+        data = data.strip().encode('utf-8')
+        parser = etree.XMLParser(ns_clean=True, recover=True, encoding='utf-8')
         try:  # get data from request
-            root = etree.fromstring(data.strip())
+            root = etree.fromstring(data, parser=parser)
             imsx_messageIdentifier = root.xpath("//*[local-name()='imsx_messageIdentifier']")[0].text
             sourcedId = root.xpath("//*[local-name()='sourcedId']")[0].text
             score = root.xpath("//*[local-name()='textString']")[0].text
