@@ -327,7 +327,7 @@ class LTIModule(LTIFields, XModule):
 
             # Parameters required for grading:
             u'resource_link_id': self.get_resource_link_id(),
-            u'lis_outcome_service_url': '{}/replaceResult'.format(self.get_base_path() if self.is_graded else ''),
+            u'lis_outcome_service_url': '{}/replaceResult'.format(self.get_base_path()) if self.is_graded else '',
             u'lis_result_sourcedid': self.get_lis_result_sourcedid(),
             # u'lis_person_sourcedid': self.get_lis_person_sourcedid(),  # optional, do not use for now.
 
@@ -373,18 +373,6 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         # add lti parameters to oauth parameters for sending in form
         params.update(body)
         return params
-
-    def get_score(self):
-        """
-        TODO read score
-        """
-        return {
-            'score': 0.5,
-            'total': self.get_maxscore()
-        }
-
-    def get_maxscore(self):
-        return self.weight
 
     def handle_ajax(self, dispatch, data):
         """
