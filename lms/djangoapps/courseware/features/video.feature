@@ -47,8 +47,9 @@ Feature: LMS.Video component
     And error message has correct text
 
   # 8
-  Scenario: Video component is rendered in the LMS in HTML5 mode with HTML5 sources that doesn't supported by browser
-    Given the course has a Video component in Youtube mode with following metadata:
+  # Disabled until we come up with a more solid test, as this one is brittle.
+   Scenario: Video component is rendered in the LMS in Youtube mode and plays with correct speed
+    Given the course has a Video component in Youtube mode:
     | start_time | end_time |
     | 00:00:00   | 00:00:04 |
     And I change video speed to "2.0"

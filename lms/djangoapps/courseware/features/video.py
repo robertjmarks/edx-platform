@@ -26,7 +26,10 @@ BUTTONS = {
 
 @after.each_scenario
 def teardown_server_time_to_response(scenario):
-    world.youtube_server.time_to_response = 0.1  # seconds
+    server = world.youtube_server
+    if hasattr(scenario, 'youtube_server_response_timeout'):
+        server.time_to_response = scenario.youtube_server_response_timeout
+        del scenario.youtube_server_response_timeout
 
 
 @step('when I view the (.*) it does not have autoplay enabled$')
@@ -34,16 +37,10 @@ def does_not_autoplay(_step, video_type):
     assert(world.css_find('.%s' % video_type)[0]['data-autoplay'] == 'False')
 
 
-@step('the course has a Video component in (.*) mode$')
-def view_video(_step, player_mode):
-    _step.given('the course has a Video component in {mode} mode with following metadata:'.format(
-        mode=player_mode
-    ))
-
-@step('the course has a Video component in (.*) mode with following metadata:$')
+@step('the course has a Video component in (.*) mode(?:[:])?$')
 def view_video_with_metadata(_step, player_mode):
     coursenum = 'test_course'
-    i_am_registered_for_the_course(step, coursenum)
+    i_am_registered_for_the_course(_step, coursenum)
 
     metadata = _step.hashes[0] if _step.hashes else {}
 
@@ -66,10 +63,7 @@ def add_video_to_course(course, player_mode, metadata):
         'display_name': 'Video',
     }
 
-    if metadata:
-        kwargs.update({
-            'metadata': metadata
-        })
+    kwargs['metadata'] = metadata
 
     if player_mode == 'html5':
         kwargs.update({
@@ -109,7 +103,10 @@ def add_video_to_course(course, player_mode, metadata):
 
 @step('youtube server is up and response time is (.*) seconds$')
 def set_youtube_response_timeout(_step, time):
-    world.youtube_server.time_to_response = time
+    server = world.youtube_server
+
+    _step.scenario.youtube_server_response_timeout = server.time_to_response
+    server.time_to_response = time
 
 
 @step('when I view the video it has rendered in (.*) mode$')
@@ -145,20 +142,19 @@ def error_message_has_correct_text(_step):
 @step('I change video speed to "([^"]*)"$')
 def change_speed(_step, speed):
     SPEED_MENU = '.speeds'
-    SPEED_MENU_LINK = '.speed_link'
     LINK = 'li[data-speed="{speed}"] a'.format(speed=speed)
 
     world.wait_for_present(SPEED_MENU)
-    world.browser.driver.execute_script("$('{menu}').addClass('open')".format(menu=SPEED_MENU))
 
-    world.wait_for_visible(SPEED_MENU_LINK)
+    js = "$('{menu}').addClass('open')"
+    world.browser.driver.execute_script(js.format(menu=SPEED_MENU))
+
     world.css_click(LINK)
 
 
 @step('I click button "([^"]*)"$')
 def click_button(_step, button):
     btn = BUTTONS[button]
-    world.wait_for_present(btn)
     world.css_click(btn)
 
 
@@ -168,8 +164,9 @@ def check_playing_time(_step, seconds):
     btn_play = BUTTONS['play']
 
     #disable css animations for buttons `play` and `pause`
-    world.browser.driver.execute_script("$('{selector}').css('transition', 'none');".format(
-        selector= '%s,%s' % (btn_pause, btn_play)
+    js = "$('{selector}').css('transition', 'none');"
+    world.browser.driver.execute_script(js.format(
+        selector=','.join((btn_pause, btn_play))
     ))
 
     # For now, the one way to check the correctness of speed is in measuring
