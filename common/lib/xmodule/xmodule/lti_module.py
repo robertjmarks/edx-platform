@@ -465,9 +465,10 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         parser = etree.XMLParser(ns_clean=True, recover=True, encoding='utf-8')
         try:  # get data from request
             root = etree.fromstring(data, parser=parser)
-            imsx_messageIdentifier = root.xpath("//*[local-name()='imsx_messageIdentifier']")[0].text
-            sourcedId = root.xpath("//*[local-name()='sourcedId']")[0].text
-            score = root.xpath("//*[local-name()='textString']")[0].text
+            namespaces = {'def': root.nsmap.values()[0]}
+            imsx_messageIdentifier = root.xpath("//def:imsx_messageIdentifier", namespaces=namespaces)[0].text
+            sourcedId = root.xpath("//def:sourcedId", namespaces=namespaces)[0].text
+            score = root.xpath("//def:textString", namespaces=namespaces)[0].text
         except:
             return response_xml_template.format(**unsupported_values), "application/xml"
 
