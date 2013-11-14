@@ -37,4 +37,4 @@ Feature: LMS.LTI component
   Given the course has correct LTI credentials
   And the course has an LTI component with correct fields, new_page is false, is_graded is true
   And I click on Grade link
-  And I wiew result in Progress page
+  Then I wiew result in Progress page

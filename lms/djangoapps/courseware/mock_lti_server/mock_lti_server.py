@@ -34,9 +34,8 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         '''
-        Handle a POST request from the client and sends response back.
+        Handle a GET request from the client and sends response back.
         '''
-        #self.post_dict = self._post_dict()
 
         self.send_response(200, 'OK')
         self.send_header('Content-type', 'html')
@@ -55,17 +54,20 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
         '''
         Handle a POST request from the client and sends response back.
         '''
-        self._send_head()
 
-        self.post_dict = self._post_dict()  # Retrieve the POST data
-
+        '''
         logger.debug("LTI provider received POST request {} to path {}".format(
             str(self.post_dict),
             self.path)
         )  # Log the request
-
-        # Respond only to requests with correct lti endpoint:
-        if self._is_correct_lti_request():
+        '''
+        # Respond to grade request
+        if 'grade' in self.path and self._send_graded_result().status_code == 200:
+            status_message = "I have stored grades."
+            self.server.grade_data['callback_url'] = None
+        # Respond to request with correct lti endpoint:
+        elif self._is_correct_lti_request():
+            self.post_dict = self._post_dict()
             correct_keys = [
                 'user_id',
                 'role',
@@ -102,20 +104,23 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
                 'callback_url': self.post_dict["lis_outcome_service_url"],
                 'user_id': self.post_dict['user_id']
             }
-
         else:
             status_message = "Invalid request URL"
+
+        self._send_head()
         self._send_response(status_message)
 
     def _send_head(self):
         '''
         Send the response code and MIME headers
         '''
+        self.send_response(200)
+        '''
         if self._is_correct_lti_request():
             self.send_response(200)
         else:
             self.send_response(500)
-
+        '''
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
@@ -148,7 +153,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
     def _send_graded_result(self):
 
         values = {
-            'textString': 0.1,
+            'textString': 0.9,
             'sourcedId': self.server.grade_data['user_id'],
             'imsx_messageIdentifier': uuid4().hex,
         }
@@ -192,6 +197,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
             headers=headers
         )
         assert response.status_code == 200
+        return response
 
     def _send_response(self, message):
         '''
@@ -204,7 +210,10 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
                 <div><h2>Graded IFrame loaded</h2> \
                 <h3>Server response is:</h3>\
                 <h3 class="result">{}</h3></div>
-                <a href="{url}/grade">Grade</a>
+                <form action="{url}/grade" method="post">
+                <input type="submit" value="Submit">
+                </form>
+
                 </body></html>""".format(message, url="http://%s:%s" % self.server.server_address)
         else:
             response_str = """<html><head><title>TEST TITLE</title></head>
