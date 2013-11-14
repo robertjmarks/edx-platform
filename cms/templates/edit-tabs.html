@@ -15,7 +15,8 @@ require(["backbone", "coffee/src/views/tabs"], function(Backbone, TabsEditView) 
       model: new Backbone.Model({
         id: '${locator}'
       }),
-      mast: $('.wrapper-mast')
+      mast: $('.wrapper-mast'),
+      url: "${locator.url_reverse('tabs')}"
     });
 });
   </script>
