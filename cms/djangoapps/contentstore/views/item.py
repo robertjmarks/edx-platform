@@ -16,7 +16,7 @@ from util.string_utils import str_to_bool
 
 from ..transcripts_utils import manage_video_subtitles_save
 
-from ..utils import get_modulestore, get_course_for_item
+from ..utils import get_modulestore
 
 from .access import has_access
 from .helpers import _xmodule_recurse
@@ -27,7 +27,7 @@ from student.models import CourseEnrollment
 from django.http import HttpResponseBadRequest
 from xblock.fields import Scope
 
-__all__ = ['orphan', 'xblock_handler']
+__all__ = ['orphan_handler', 'xblock_handler']
 
 log = logging.getLogger(__name__)
 
@@ -170,8 +170,7 @@ def _save_item(usage_loc, item_location, data=None, children=None, metadata=None
         if existing_item.category == 'video':
             manage_video_subtitles_save(existing_item, existing_item)
 
-    # Note that children aren't returned because it is currently expensive to get the
-    # containing course for an xblock (and that is necessary to convert to locators).
+    # Note that children aren't being returned until we have a use case.
     return JsonResponse({
         'id': unicode(usage_loc),
         'data': data,
@@ -223,9 +222,8 @@ def _create_item(request):
     if category not in DETACHED_CATEGORIES:
         get_modulestore(parent.location).update_children(parent_location, parent.children + [dest_location.url()])
 
-    locator = loc_mapper().translate_location(
-        get_course_for_item(parent_location).location.course_id, dest_location, False, True
-    )
+    course_location = loc_mapper().translate_locator_to_location(parent_locator, get_course=True)
+    locator = loc_mapper().translate_location(course_location.course_id, dest_location, False, True)
     return JsonResponse({'id': dest_location.url(), "locator": unicode(locator)})
 
 
@@ -263,7 +261,7 @@ def _delete_item_at_location(item_location, delete_children=False, delete_all_ve
 # pylint: disable=W0613
 @login_required
 @require_http_methods(("GET", "DELETE"))
-def orphan(request, tag=None, course_id=None, branch=None, version_guid=None, block=None):
+def orphan_handler(request, tag=None, course_id=None, branch=None, version_guid=None, block=None):
     """
     View for handling orphan related requests. GET gets all of the current orphans.
     DELETE removes all orphans (requires is_staff access)
@@ -319,8 +317,7 @@ def _get_module_info(usage_loc, rewrite_static_links=False):
             course_id=module.location.org + '/' + module.location.course + '/BOGUS_RUN_REPLACE_WHEN_AVAILABLE'
         )
 
-    # Note that children aren't returned because it is currently expensive to get the
-    # containing course for an xblock (and that is necessary to convert to locators).
+    # Note that children aren't being returned until we have a use case.
     return {
         'id': unicode(usage_loc),
         'data': data,
