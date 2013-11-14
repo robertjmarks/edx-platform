@@ -75,6 +75,10 @@ def tabs_handler(request, tag=None, course_id=None, branch=None, version_guid=No
         else:
             request_body = (json.loads(request.body))
             if 'tabs' in request_body:
+                def get_location_for_tab(tab):
+                    tab_locator = BlockUsageLocator(tab)
+                    return loc_mapper().translate_locator_to_location(tab_locator)
+
                 tabs = request_body['tabs']
 
                 # get list of existing static tabs in course
@@ -89,7 +93,7 @@ def tabs_handler(request, tag=None, course_id=None, branch=None, version_guid=No
                 # load all reference tabs, return BadRequest if we can't find any of them
                 tab_items = []
                 for tab in tabs:
-                    item = modulestore('direct').get_item(Location(tab))
+                    item = modulestore('direct').get_item(get_location_for_tab(tab))
                     if item is None:
                         return JsonResponse(
                             {"error": "no tab for found location {}".format(tab)}, status=400
